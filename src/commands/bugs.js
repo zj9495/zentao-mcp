@@ -21,7 +21,9 @@ function printHelp() {
   process.stdout.write(`zentao bugs <subcommand>\n\n`);
   process.stdout.write(`Usage:\n`);
   process.stdout.write(`  zentao bugs list --product <id> [--page N] [--limit N] [--json]\n`);
-  process.stdout.write(`  zentao bugs mine [--scope assigned|opened|resolved|all] [--status active|resolved|closed|all] [--include-details] [--json]\n`);
+  process.stdout.write(
+    `  zentao bugs mine [--scope assigned|opened|resolved|all] [--status active|resolved|closed|all] [--account <account>] [--product-ids 1,2] [--include-zero] [--per-page N] [--max-items N] [--limit N] [--include-details] [--json]\n`
+  );
 }
 
 function formatAccount(value) {
@@ -114,14 +116,16 @@ export async function runBugs({ argv = [], env = process.env } = {}) {
     const includeDetails = Boolean(cliArgs["include-details"]);
     const includeZero = Boolean(cliArgs["include-zero"]);
     const productIds = parseCsvIntegers(cliArgs["product-ids"]);
+    const perPage = cliArgs["per-page"];
+    const maxItems = cliArgs["max-items"] ?? cliArgs.limit;
     const result = await api.bugsMine({
       account: cliArgs.account,
       scope: cliArgs.scope,
       status: cliArgs.status,
       productIds,
       includeZero,
-      perPage: cliArgs["per-page"],
-      maxItems: cliArgs["max-items"],
+      perPage,
+      maxItems,
       includeDetails,
     });
 

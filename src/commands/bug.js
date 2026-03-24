@@ -59,7 +59,7 @@ export async function runBug({ argv = [], env = process.env } = {}) {
     return;
   }
 
-  const bug = result?.result?.bug;
+  const bug = result?.result?.bug ?? result?.result;
   if (!bug || typeof bug !== "object") {
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;

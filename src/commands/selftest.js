@@ -1,5 +1,5 @@
 import process from "node:process";
-import { getOption, hasHelpFlag, parseCliArgs } from "../cli/args.js";
+import { hasHelpFlag, parseCliArgs } from "../cli/args.js";
 import { printSelfTestHelp } from "../cli/help.js";
 import { createClientFromCli } from "../zentao/client.js";
 
@@ -10,15 +10,8 @@ export async function runSelfTest({ argv = [], env = process.env } = {}) {
   }
 
   const cliArgs = parseCliArgs(argv);
-  const baseUrl = getOption(cliArgs, env, "ZENTAO_URL", "zentao-url");
-  const account = getOption(cliArgs, env, "ZENTAO_ACCOUNT", "zentao-account");
-  const password = getOption(cliArgs, env, "ZENTAO_PASSWORD", "zentao-password");
   const expectedRaw = cliArgs.expected ?? null;
   const expected = expectedRaw === null ? null : Number(expectedRaw);
-
-  if (!baseUrl || !account || !password) {
-    throw new Error("Missing ZENTAO_URL/ZENTAO_ACCOUNT/ZENTAO_PASSWORD (or CLI args). ");
-  }
 
   const api = createClientFromCli({ argv, env });
   const result = await api.bugsMine({

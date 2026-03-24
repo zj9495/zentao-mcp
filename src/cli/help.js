@@ -7,7 +7,9 @@ export function printRootHelp() {
   process.stdout.write(`  zentao products list [--page N] [--limit N] [--json]\n`);
   process.stdout.write(`  zentao bugs list --product <id> [--page N] [--limit N] [--json]\n`);
   process.stdout.write(`  zentao bug get --id <bugId> [--json]\n`);
-  process.stdout.write(`  zentao bugs mine [--scope ...] [--status ...] [--include-details] [--json]\n`);
+  process.stdout.write(
+    `  zentao bugs mine [--scope ...] [--status ...] [--account ...] [--product-ids ...] [--include-zero] [--per-page N] [--max-items N] [--limit N] [--include-details] [--json]\n`
+  );
   process.stdout.write(`  zentao self-test [--expected N]\n`);
   process.stdout.write(`  zentao release [patch|minor|major] [--dry-run] [--yes]\n\n`);
   process.stdout.write(`Auth options:\n`);
