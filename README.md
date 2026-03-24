@@ -94,42 +94,75 @@ zentao bugs mine --include-details --json
 zentao self-test
 ```
 
-## 让 AI 帮你查禅道（一键安装 Skill）
+## 让 AI 帮你查禅道
 
-你可以让 Cursor / Claude Code / Windsurf 等 AI 助手直接帮你操作禅道。只需复制下面的提示词发给你的 AI：
+只需对你的 AI 助手（Cursor / Claude Code / Windsurf 等）说：
 
-<details>
-<summary><strong>点击展开 → 复制提示词发给 AI</strong></summary>
+> 帮我安装这个 skill：https://github.com/leeguooooo/zentao-mcp
 
-```
-请帮我安装 zentao CLI skill，让你以后可以直接帮我查禅道的产品和 Bug。
-
-步骤：
-
-1. 运行 `pnpm i -g @leeguoo/zentao-mcp` 安装 CLI（如果没有 pnpm 就用 npm i -g @leeguoo/zentao-mcp）
-2. 找到安装后的 skills 目录，运行：
-   node -e "const p=require('path');const r=require('module').createRequire(import.meta?.url||__filename);try{console.log(p.join(p.dirname(r.resolve('@leeguoo/zentao-mcp/package.json')),'skills','zentao','SKILL.md'))}catch{}" 
-   如果上面不行，直接用 find 或 ls 在全局 node_modules 里找 @leeguoo/zentao-mcp/skills/zentao/SKILL.md
-3. 读取那个 SKILL.md 文件的完整内容
-4. 把 SKILL.md 复制到我的 skill 目录：
-   - Cursor：~/.cursor/skills/zentao/SKILL.md
-   - Claude Code：~/.claude/skills/zentao/SKILL.md（或项目下 .claude/skills/zentao/SKILL.md）
-   - 其他工具：按工具的 skill 规范放置
-5. 然后帮我运行 `zentao login` 完成登录（会交互式问我 URL、账号、密码）
-6. 运行 `zentao self-test` 验证一切正常
-
-完成后告诉我结果。
-```
-
-</details>
-
-安装完成后，你就可以直接对 AI 说：
+AI 会自动读取本页面并完成安装。安装后你就可以直接说：
 
 - "帮我看下产品 6 有哪些未解决的 Bug"
 - "查一下 Bug #1329 的详情"
 - "我名下还有多少活跃 Bug？"
 
-AI 会自动调用 `zentao` 命令帮你完成。
+---
+
+<!-- AI_SKILL_INSTALL: 以下内容供 AI 助手自动安装时读取 -->
+
+<details>
+<summary><strong>AI Skill 自动安装指引（AI 可直接执行）</strong></summary>
+
+当用户要求安装本仓库为 skill 时，请按顺序执行：
+
+**1. 安装 CLI**
+
+```bash
+pnpm i -g @leeguoo/zentao-mcp || npm i -g @leeguoo/zentao-mcp
+```
+
+**2. 验证安装**
+
+```bash
+zentao --help
+```
+
+**3. 下载 SKILL.md**
+
+从 GitHub 获取 SKILL.md 原始内容并保存到本地 skill 目录：
+
+```bash
+# Cursor 用户
+mkdir -p ~/.cursor/skills/zentao
+curl -fsSL https://raw.githubusercontent.com/leeguooooo/zentao-mcp/refs/heads/main/skills/zentao/SKILL.md -o ~/.cursor/skills/zentao/SKILL.md
+
+# Claude Code 用户（~/.codex/skills/）
+mkdir -p ~/.codex/skills/zentao
+curl -fsSL https://raw.githubusercontent.com/leeguooooo/zentao-mcp/refs/heads/main/skills/zentao/SKILL.md -o ~/.codex/skills/zentao/SKILL.md
+```
+
+根据用户使用的工具选择对应路径。如果无法判断，优先用 `~/.cursor/skills/zentao/SKILL.md`。
+
+**4. 引导登录**
+
+提示用户提供禅道 URL、账号和密码，然后执行：
+
+```bash
+zentao login --zentao-url="<用户的禅道URL>" --zentao-account="<账号>" --zentao-password="<密码>"
+```
+
+> 注意：URL 通常需要包含 `/zentao`，如 `https://zentao.example.com/zentao`
+
+**5. 验证**
+
+```bash
+zentao whoami
+zentao self-test
+```
+
+全部通过后告知用户安装完成。
+
+</details>
 
 ## 常见问题
 
