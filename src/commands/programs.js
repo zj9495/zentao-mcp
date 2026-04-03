@@ -1,46 +1,44 @@
 import process from "node:process";
 import { extractCommand, hasHelpFlag, parseCliArgs } from "../cli/args.js";
 import { createClientFromCli } from "../zentao/client.js";
-import { listProducts } from "../zentao/products.js";
+import { listPrograms } from "../zentao/programs.js";
 
 function printHelp() {
-  process.stdout.write(`zentao products list\n\n`);
+  process.stdout.write(`zentao programs list\n\n`);
   process.stdout.write(`Usage:\n`);
-  process.stdout.write(`  zentao products list [--page N] [--limit N] [--json]\n`);
+  process.stdout.write(`  zentao programs list [--limit N] [--json]\n`);
   process.stdout.write(`\n`);
   process.stdout.write(`Options:\n`);
   process.stdout.write(`  --json               print full JSON payload\n`);
 }
 
-export function formatProductsSimple(products) {
+export function formatProgramsSimple(programs) {
   const rows = [];
-  rows.push(["id", "name", "totalBugs", "status"].join("\t"));
-  for (const product of products) {
+  rows.push(["id", "name", "status"].join("\t"));
+  for (const program of programs) {
     rows.push(
       [
-        String(product.id ?? ""),
-        String(product.name ?? ""),
-        String(product.totalBugs ?? product.totalBugsCount ?? ""),
-        String(product.status ?? product.productStatus ?? ""),
+        String(program.id ?? ""),
+        String(program.name ?? ""),
+        String(program.status ?? ""),
       ].join("\t")
     );
   }
   return `${rows.join("\n")}\n`;
 }
 
-export async function runProducts({ argv = [], env = process.env } = {}) {
+export async function runPrograms({ argv = [], env = process.env } = {}) {
   if (hasHelpFlag(argv)) {
     printHelp();
     return;
   }
 
   const { command: sub, argv: argvWithoutSub } = extractCommand(argv);
-  if (sub !== "list") throw new Error(`Unknown products subcommand: ${sub || "(missing)"}`);
+  if (sub !== "list") throw new Error(`Unknown programs subcommand: ${sub || "(missing)"}`);
 
   const cliArgs = parseCliArgs(argvWithoutSub);
   const api = createClientFromCli({ argv: argvWithoutSub, env });
-  const result = await listProducts(api, {
-    page: cliArgs.page,
+  const result = await listPrograms(api, {
     limit: cliArgs.limit,
   });
 
@@ -49,11 +47,11 @@ export async function runProducts({ argv = [], env = process.env } = {}) {
     return;
   }
 
-  const products = result?.result?.products;
-  if (!Array.isArray(products)) {
+  const programs = result?.result?.programs ?? result?.result;
+  if (!Array.isArray(programs)) {
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
   }
 
-  process.stdout.write(formatProductsSimple(products));
+  process.stdout.write(formatProgramsSimple(programs));
 }

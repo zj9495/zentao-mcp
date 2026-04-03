@@ -1,6 +1,7 @@
 import process from "node:process";
 import { extractCommand, hasHelpFlag, parseCliArgs } from "../cli/args.js";
 import { createClientFromCli } from "../zentao/client.js";
+import { listBugs, bugsMine } from "../zentao/bugs.js";
 
 function parseCsvIntegers(value) {
   if (value === undefined || value === null || value === "") return null;
@@ -91,7 +92,7 @@ export async function runBugs({ argv = [], env = process.env } = {}) {
   if (sub === "list") {
     const product = cliArgs.product;
     if (!product) throw new Error("Missing --product");
-    const result = await api.listBugs({
+    const result = await listBugs(api, {
       product,
       page: cliArgs.page,
       limit: cliArgs.limit,
@@ -118,7 +119,7 @@ export async function runBugs({ argv = [], env = process.env } = {}) {
     const productIds = parseCsvIntegers(cliArgs["product-ids"]);
     const perPage = cliArgs["per-page"];
     const maxItems = cliArgs["max-items"] ?? cliArgs.limit;
-    const result = await api.bugsMine({
+    const result = await bugsMine(api, {
       account: cliArgs.account,
       scope: cliArgs.scope,
       status: cliArgs.status,

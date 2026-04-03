@@ -4,6 +4,7 @@ import test from "node:test";
 
 import { extractCommand, parseCliArgs } from "../src/cli/args.js";
 import { createClientFromCli, ZentaoClient } from "../src/zentao/client.js";
+import { listProducts } from "../src/zentao/products.js";
 import { getConfigPath, loadConfig, saveConfig } from "../src/config/store.js";
 import { formatProductsSimple } from "../src/commands/products.js";
 import { formatBugsMineSimple, formatBugsSimple } from "../src/commands/bugs.js";
@@ -96,7 +97,7 @@ test("ZentaoClient listProducts uses token then GET products", async () => {
       password: "pw",
     });
 
-    const result = await client.listProducts({ page: 1, limit: 1000 });
+    const result = await listProducts(client, { page: 1, limit: 1000 });
     assert.equal(result.status, 1);
     assert.equal(result.result?.products?.[0]?.name, "P1");
 
