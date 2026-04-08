@@ -1,7 +1,7 @@
 {
   "name": "@leeguoo/zentao-mcp",
   "version": "0.6.0",
-  "description": "ZenTao CLI for products + bugs",
+  "description": "ZenTao CLI for bugs, tasks, stories, todos, products, projects, tests, docs, issues, and risks",
   "keywords": [
     "zentao",
     "chandao",

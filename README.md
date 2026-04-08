@@ -1,6 +1,6 @@
 # zentao-mcp
 
-在命令行里查 Bug、看产品，让你的 AI 助手也能直接操作禅道。
+在命令行里查 Bug、任务、需求、待办、产品、项目、测试和文档，让你的 AI 助手也能直接操作禅道。
 
 零依赖、单文件，装完即用。
 
@@ -50,6 +50,23 @@ zentao whoami
 ```
 
 配置文件位置：`~/.config/zentao/config.toml`
+
+## 支持的能力
+
+当前 CLI 已支持这些对象和动作：
+
+- 认证与连通性：`login`、`whoami`、`self-test`
+- Bug：列表、查询、创建、指派、评论、解决、关闭、激活、查我的 Bug
+- 任务：列表、查询、创建、开始、完成、暂停、关闭
+- 需求：列表、查询、创建
+- 待办：列表、查询、创建、完成、关闭
+- 产品 / 项目 / 项目集 / 执行：列表，项目构建查询
+- 计划 / 发布：列表、详情
+- 测试用例 / 测试单 / 测试套件：列表、详情
+- 文档库 / 文档：列表、详情
+- 用户 / 部门：列表
+- 问题 / 风险：列表、详情
+- 机器可读输出：全部命令支持 `--json`
 
 ## 日常使用
 
@@ -102,6 +119,70 @@ zentao bugs mine --include-details --json
 zentao self-test
 ```
 
+## 命令总览
+
+```bash
+zentao login --zentao-url=... --zentao-account=... --zentao-password=...
+zentao whoami
+zentao self-test
+
+zentao products list
+zentao programs list
+zentao projects list
+zentao projects builds --id 22
+zentao executions list
+
+zentao bugs list --product 6
+zentao bugs mine --status active --include-details
+zentao bug get --id 1329
+zentao bug create --product 6 --title "bug title"
+zentao bug assign --id 1329 --assigned-to someone
+zentao bug resolve --id 1329 --resolution fixed
+zentao bug close --id 1329
+zentao bug activate --id 1329
+zentao bug comment --id 1329 --comment "comment"
+
+zentao tasks list --execution 25
+zentao task get --id 388
+zentao task create --execution 25 --name "task name"
+zentao task start --id 388
+zentao task finish --id 388
+zentao task pause --id 388
+zentao task close --id 388
+
+zentao stories list --product 3
+zentao story get --id 1
+zentao story create --product 3 --title "story title"
+
+zentao todos list
+zentao todos get --id 1
+zentao todos create --name "todo name"
+zentao todos finish --id 1
+zentao todos close --id 1
+
+zentao plans list --product 3
+zentao plans get --id 1
+zentao releases list --product 3
+zentao releases get --id 1
+
+zentao testcases list --product 3
+zentao testcases get --id 1
+zentao testtasks list
+zentao testtasks get --id 1
+zentao testsuites list --product 3
+zentao testsuites get --id 1
+
+zentao docs libs
+zentao docs list --lib 50
+zentao docs get --id 1
+zentao users list
+zentao departments list
+zentao issues list
+zentao issues get --id 1
+zentao risks list
+zentao risks get --id 1
+```
+
 ## 让 AI 帮你查禅道
 
 只需对你的 AI 助手（Cursor / Claude Code / Windsurf 等）说：
@@ -113,6 +194,11 @@ zentao self-test
 - "帮我看下产品 6 有哪些未解决的 Bug"
 - "查一下 Bug #1329 的详情"
 - "我名下还有多少活跃 Bug？"
+- "帮我看执行 25 下有哪些任务"
+- "查一下产品 3 的需求 / 计划 / 发布"
+- "列出测试单、测试用例、测试套件"
+- "看一下项目问题和风险"
+- "打开文档库 50 里的文档列表"
 
 ---
 
