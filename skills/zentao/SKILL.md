@@ -14,8 +14,18 @@ Use this skill when the user asks to manage anything in ZenTao: bugs, tasks, sto
 ## Installation
 
 ```bash
+npx skills add leeguooooo/zentao-mcp -y -g
 pnpm i -g @leeguoo/zentao-mcp
 ```
+
+Fallbacks:
+
+```bash
+npm i -g @leeguoo/zentao-mcp
+npx -y @leeguoo/zentao-mcp --help
+```
+
+`skills add` installs the skill definition; the CLI still needs to be available as `zentao` in PATH for normal usage.
 
 ## Login
 
@@ -25,6 +35,14 @@ zentao whoami
 ```
 
 IMPORTANT: `--zentao-url` usually must include `/zentao`.
+
+## Quick start
+
+```bash
+pnpm i -g @leeguoo/zentao-mcp
+zentao login --zentao-url="https://zentao.example.com/zentao" --zentao-account="leo" --zentao-password="***"
+zentao whoami
+```
 
 ## Bug commands
 

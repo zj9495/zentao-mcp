@@ -1,6 +1,8 @@
 export function printRootHelp() {
   // Keep this plain text: many users run via npx and paste output.
   process.stdout.write(`zentao - ZenTao CLI\n\n`);
+  process.stdout.write(`Install skill:\n`);
+  process.stdout.write(`  npx skills add leeguooooo/zentao-mcp -y -g\n\n`);
   process.stdout.write(`Usage:\n`);
   process.stdout.write(`  zentao login [--zentao-url ... --zentao-account ... --zentao-password ...] [--yes]\n`);
   process.stdout.write(`  zentao whoami\n`);

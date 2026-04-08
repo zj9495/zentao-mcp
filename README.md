@@ -7,6 +7,12 @@
 ## 快速开始
 
 ```bash
+npx skills add leeguooooo/zentao-mcp -y -g
+```
+
+安装 CLI：
+
+```bash
 pnpm i -g @leeguoo/zentao-mcp
 ```
 
@@ -21,6 +27,8 @@ npm i -g @leeguoo/zentao-mcp
 ```bash
 npx -y @leeguoo/zentao-mcp --help
 ```
+
+`skills add` 只负责安装 skill 文件；CLI 仍然建议全局安装后直接用 `zentao` 命令。
 
 ## 登录
 
@@ -98,9 +106,9 @@ zentao self-test
 
 只需对你的 AI 助手（Cursor / Claude Code / Windsurf 等）说：
 
-> 帮我安装这个 skill：https://github.com/leeguooooo/zentao-mcp
+> 帮我执行 `npx skills add leeguooooo/zentao-mcp -y -g`，然后帮我登录禅道
 
-AI 会自动读取本页面并完成安装。安装后你就可以直接说：
+安装后你就可以直接说：
 
 - "帮我看下产品 6 有哪些未解决的 Bug"
 - "查一下 Bug #1329 的详情"
@@ -115,33 +123,23 @@ AI 会自动读取本页面并完成安装。安装后你就可以直接说：
 
 当用户要求安装本仓库为 skill 时，请按顺序执行：
 
-**1. 安装 CLI**
+**1. 安装 Skill**
+
+```bash
+npx skills add leeguooooo/zentao-mcp -y -g
+```
+
+**2. 安装 CLI**
 
 ```bash
 pnpm i -g @leeguoo/zentao-mcp || npm i -g @leeguoo/zentao-mcp
 ```
 
-**2. 验证安装**
+**3. 验证安装**
 
 ```bash
 zentao --help
 ```
-
-**3. 下载 SKILL.md**
-
-从 GitHub 获取 SKILL.md 原始内容并保存到本地 skill 目录：
-
-```bash
-# Cursor 用户
-mkdir -p ~/.cursor/skills/zentao
-curl -fsSL https://raw.githubusercontent.com/leeguooooo/zentao-mcp/refs/heads/main/skills/zentao/SKILL.md -o ~/.cursor/skills/zentao/SKILL.md
-
-# Claude Code 用户（~/.codex/skills/）
-mkdir -p ~/.codex/skills/zentao
-curl -fsSL https://raw.githubusercontent.com/leeguooooo/zentao-mcp/refs/heads/main/skills/zentao/SKILL.md -o ~/.codex/skills/zentao/SKILL.md
-```
-
-根据用户使用的工具选择对应路径。如果无法判断，优先用 `~/.cursor/skills/zentao/SKILL.md`。
 
 **4. 引导登录**
 

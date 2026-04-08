@@ -3,12 +3,14 @@ import process from "node:process";
 import test from "node:test";
 
 import { extractCommand, parseCliArgs } from "../src/cli/args.js";
+import { printRootHelp } from "../src/cli/help.js";
 import { createClientFromCli, ZentaoClient } from "../src/zentao/client.js";
 import { listProducts } from "../src/zentao/products.js";
 import { getConfigPath, loadConfig, saveConfig } from "../src/config/store.js";
 import { formatProductsSimple } from "../src/commands/products.js";
 import { formatBugsMineSimple, formatBugsSimple } from "../src/commands/bugs.js";
 import { formatBugSimple } from "../src/commands/bug.js";
+import { readFileSync } from "node:fs";
 
 test("extractCommand skips flag values", () => {
   const argv = [
@@ -151,4 +153,26 @@ test("formatBugsMineSimple prints summary", () => {
   });
   assert.ok(out.includes("total\t2"));
   assert.ok(out.includes("1\tP1\t2\t10"));
+});
+
+test("repository exports a zentao skill for skills add", () => {
+  const skill = readFileSync(new URL("../skills/zentao/SKILL.md", import.meta.url), "utf8");
+  assert.match(skill, /^---\nname: zentao\n/m);
+  assert.match(skill, /npx skills add leeguooooo\/zentao-mcp -y -g/);
+});
+
+test("root help mentions skills add install path", () => {
+  let output = "";
+  const originalWrite = process.stdout.write;
+  process.stdout.write = ((chunk, encoding, callback) => {
+    output += String(chunk);
+    if (typeof callback === "function") callback();
+    return true;
+  });
+  try {
+    printRootHelp();
+  } finally {
+    process.stdout.write = originalWrite;
+  }
+  assert.match(output, /npx skills add leeguooooo\/zentao-mcp -y -g/);
 });
