@@ -1,5 +1,5 @@
 import process from "node:process";
-import { extractCommand, hasHelpFlag, parseCliArgs } from "../cli/args.js";
+import { decodeEscapedNewlines, extractCommand, hasHelpFlag, parseCliArgs } from "../cli/args.js";
 import { createClientFromCli } from "../zentao/client.js";
 import { listTodos, getTodo, createTodo, finishTodo, closeTodo } from "../zentao/todos.js";
 
@@ -142,7 +142,7 @@ async function runTodosCreate(cliArgs, argv, env) {
     begin: cliArgs.begin,
     end: cliArgs.end,
     pri: cliArgs.pri,
-    desc: cliArgs.desc,
+    desc: decodeEscapedNewlines(cliArgs.desc),
     assignedTo: cliArgs["assigned-to"],
   });
 

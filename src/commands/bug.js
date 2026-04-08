@@ -1,5 +1,5 @@
 import process from "node:process";
-import { extractCommand, hasHelpFlag, parseCliArgs } from "../cli/args.js";
+import { decodeEscapedNewlines, extractCommand, hasHelpFlag, parseCliArgs } from "../cli/args.js";
 import { createClientFromCli } from "../zentao/client.js";
 import { getBug, resolveBug, assignBug, commentBug, closeBug, activateBug, createBug } from "../zentao/bugs.js";
 
@@ -112,7 +112,7 @@ async function runBugResolve(cliArgs, argv, env) {
     resolution,
     resolvedBuild: cliArgs["resolved-build"],
     assignedTo: cliArgs["assigned-to"],
-    comment: cliArgs.comment,
+    comment: decodeEscapedNewlines(cliArgs.comment),
   });
 
   if (cliArgs.json) {
@@ -138,7 +138,7 @@ async function runBugAssign(cliArgs, argv, env) {
   const result = await assignBug(api, {
     id,
     assignedTo,
-    comment: cliArgs.comment,
+    comment: decodeEscapedNewlines(cliArgs.comment),
   });
 
   if (cliArgs.json) {
@@ -157,7 +157,7 @@ async function runBugAssign(cliArgs, argv, env) {
 async function runBugComment(cliArgs, argv, env) {
   const id = cliArgs.id;
   if (!id) throw new Error("Missing --id");
-  const comment = cliArgs.comment;
+  const comment = decodeEscapedNewlines(cliArgs.comment);
   if (!comment) throw new Error("Missing --comment");
 
   const api = createClientFromCli({ argv, env });
@@ -188,7 +188,7 @@ async function runBugCreate(cliArgs, argv, env) {
     severity: cliArgs.severity,
     pri: cliArgs.pri,
     type: cliArgs.type,
-    steps: cliArgs.steps,
+    steps: decodeEscapedNewlines(cliArgs.steps),
     assignedTo: cliArgs["assigned-to"],
     openedBuild: cliArgs["opened-build"],
   });
@@ -213,7 +213,7 @@ async function runBugClose(cliArgs, argv, env) {
   const api = createClientFromCli({ argv, env });
   const result = await closeBug(api, {
     id,
-    comment: cliArgs.comment,
+    comment: decodeEscapedNewlines(cliArgs.comment),
   });
 
   if (cliArgs.json) {
@@ -237,7 +237,7 @@ async function runBugActivate(cliArgs, argv, env) {
   const result = await activateBug(api, {
     id,
     assignedTo: cliArgs["assigned-to"],
-    comment: cliArgs.comment,
+    comment: decodeEscapedNewlines(cliArgs.comment),
   });
 
   if (cliArgs.json) {

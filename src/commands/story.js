@@ -1,5 +1,5 @@
 import process from "node:process";
-import { extractCommand, hasHelpFlag, parseCliArgs } from "../cli/args.js";
+import { decodeEscapedNewlines, extractCommand, hasHelpFlag, parseCliArgs } from "../cli/args.js";
 import { createClientFromCli } from "../zentao/client.js";
 import { getStory, createStory } from "../zentao/stories.js";
 
@@ -90,7 +90,7 @@ async function runStoryCreate(cliArgs, argv, env) {
   const result = await createStory(api, {
     product,
     title,
-    spec: cliArgs.spec,
+    spec: decodeEscapedNewlines(cliArgs.spec),
     pri: cliArgs.pri,
     estimate: cliArgs.estimate,
     type: cliArgs.type,

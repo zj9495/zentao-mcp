@@ -1,5 +1,5 @@
 import process from "node:process";
-import { extractCommand, hasHelpFlag, parseCliArgs } from "../cli/args.js";
+import { decodeEscapedNewlines, extractCommand, hasHelpFlag, parseCliArgs } from "../cli/args.js";
 import { createClientFromCli } from "../zentao/client.js";
 import { getTask, createTask, startTask, finishTask, closeTask, pauseTask } from "../zentao/tasks.js";
 
@@ -110,7 +110,7 @@ async function runTaskCreate(cliArgs, argv, env) {
     pri: cliArgs.pri,
     estimate: cliArgs.estimate,
     type: cliArgs.type,
-    desc: cliArgs.desc,
+    desc: decodeEscapedNewlines(cliArgs.desc),
   });
 
   if (cliArgs.json) {
@@ -181,7 +181,7 @@ async function runTaskClose(cliArgs, argv, env) {
   const api = createClientFromCli({ argv, env });
   const result = await closeTask(api, {
     id,
-    comment: cliArgs.comment,
+    comment: decodeEscapedNewlines(cliArgs.comment),
   });
 
   if (cliArgs.json) {

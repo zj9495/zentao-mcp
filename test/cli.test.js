@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import process from "node:process";
 import test from "node:test";
 
-import { extractCommand, parseCliArgs } from "../src/cli/args.js";
+import { decodeEscapedNewlines, extractCommand, parseCliArgs } from "../src/cli/args.js";
 import { printRootHelp } from "../src/cli/help.js";
 import { createClientFromCli, ZentaoClient } from "../src/zentao/client.js";
 import { listProducts } from "../src/zentao/products.js";
@@ -44,6 +44,12 @@ test("parseCliArgs supports --flag value and --flag=value", () => {
   assert.equal(args["zentao-url"], "https://example.com/zentao");
   assert.equal(args.page, "2");
   assert.equal(args["include-details"], true);
+});
+
+test("decodeEscapedNewlines converts escaped newlines into real line breaks", () => {
+  assert.equal(decodeEscapedNewlines("line1\\n\\nline2"), "line1\n\nline2");
+  assert.equal(decodeEscapedNewlines("line1\\r\\nline2"), "line1\nline2");
+  assert.equal(decodeEscapedNewlines("plain text"), "plain text");
 });
 
 test("createClientFromCli throws on missing auth", () => {

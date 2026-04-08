@@ -20,6 +20,14 @@ export function parseCliArgs(argv) {
   return args;
 }
 
+export function decodeEscapedNewlines(value) {
+  if (typeof value !== "string" || !value.includes("\\")) return value;
+  return value
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\\r/g, "\n");
+}
+
 export function hasHelpFlag(argv) {
   return argv.includes("--help") || argv.includes("-h");
 }
