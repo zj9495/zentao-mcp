@@ -3,6 +3,7 @@ import {
   normalizeError,
   toInt,
   normalizeAccountValue,
+  extractAccounts,
   matchesAccount,
 } from "./normalize.js";
 
@@ -195,7 +196,7 @@ export async function commentBug(client, { id, comment }) {
   return normalizeError(json.error || "comment failed", json);
 }
 
-export async function fetchAllBugsForProduct(client, { product, perPage, maxItems }) {
+export async function fetchAllBugsForProduct(client, { product, perPage, maxItems, status }) {
   const bugs = [];
   let page = 1;
   let total = null;
@@ -203,10 +204,12 @@ export async function fetchAllBugsForProduct(client, { product, perPage, maxItem
   const cap = toInt(maxItems, 0);
 
   while (true) {
+    const query = { product, page, limit: pageSize };
+    if (status) query.status = status;
     const payload = await client.request({
       method: "GET",
       path: "/api.php/v1/bugs",
-      query: { product, page, limit: pageSize },
+      query,
     });
 
     if (payload.error) throw new Error(payload.error);
@@ -228,6 +231,172 @@ export async function fetchAllBugsForProduct(client, { product, perPage, maxItem
   }
 
   return { bugs, total };
+}
+
+export async function bugsStats(client, { productIds, groupBy, from, to, perPage }) {
+  if (!Array.isArray(productIds) || !productIds.length) {
+    return normalizeError("productIds is required and must be a non-empty array");
+  }
+
+  const { listProducts } = await import("./products.js");
+
+  const productsResponse = await listProducts(client, { page: 1, limit: 1000 });
+  if (productsResponse.status !== 1) return productsResponse;
+  const allProducts = productsResponse.result.products || [];
+
+  const productSet = new Set(productIds.map((id) => Number(id)));
+  const products = allProducts.filter((p) => productSet.has(Number(p.id)));
+
+  if (!products.length) {
+    return normalizeError("No matching products found for the given product-ids");
+  }
+
+  const hasTimeFilter = Boolean(from || to);
+  const fromDate = from ? new Date(from) : null;
+  const toDate = to ? new Date(to) : null;
+  if (fromDate) fromDate.setHours(0, 0, 0, 0);
+  if (toDate) toDate.setHours(23, 59, 59, 999);
+
+  const allBugs = [];
+
+  for (const product of products) {
+    const { bugs } = await fetchAllBugsForProduct(client, {
+      product: product.id,
+      perPage,
+      status: "all",
+    });
+    for (const bug of bugs) {
+      const res = String(bug.resolution || "").toLowerCase();
+      if (res === "duplicate") continue;
+      allBugs.push({ ...bug, _productId: product.id, _productName: product.name });
+    }
+  }
+
+  const notBugResolutions = new Set(["willnotfix", "bydesign", "notrepro", "external"]);
+
+  const isHandled = (bug) => {
+    const r = String(bug.resolution || "").toLowerCase();
+    return r !== "";
+  };
+
+  const isClosed = (bug) => {
+    return String(bug.status || "").toLowerCase() === "closed";
+  };
+
+  const isFixed = (bug) => {
+    const r = String(bug.resolution || "").toLowerCase();
+    return isClosed(bug) && r === "fixed";
+  };
+
+  const isNotBug = (bug) => {
+    const r = String(bug.resolution || "").toLowerCase();
+    return notBugResolutions.has(r);
+  };
+
+  const inTimeRange = (bug) => {
+    const dateStr = bug.resolvedDate;
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return false;
+    if (fromDate && d < fromDate) return false;
+    if (toDate && d > toDate) return false;
+    return true;
+  };
+
+  const targetGroupBy = (groupBy || "product").toLowerCase();
+  const totalBugs = allBugs.length;
+
+  if (targetGroupBy === "product") {
+    const groups = [];
+    for (const product of products) {
+      const productBugs = allBugs.filter((b) => b._productId === product.id);
+      const total = productBugs.length;
+      const notBug = productBugs.filter((b) => isNotBug(b)).length;
+      const realBugTotal = total - notBug;
+      if (hasTimeFilter) {
+        const resolvedInPeriod = productBugs.filter((b) => isHandled(b) && inTimeRange(b)).length;
+        const closedInPeriod = productBugs.filter((b) => isClosed(b) && inTimeRange(b)).length;
+        const fixedInPeriod = productBugs.filter((b) => isFixed(b) && inTimeRange(b)).length;
+        groups.push({ productId: product.id, productName: product.name, total, resolvedInPeriod, closedInPeriod, fixedInPeriod });
+      } else {
+        const resolved = productBugs.filter((b) => isHandled(b)).length;
+        const closed = productBugs.filter((b) => isClosed(b)).length;
+        const fixed = productBugs.filter((b) => isFixed(b)).length;
+        const active = total - resolved;
+        groups.push({
+          productId: product.id, productName: product.name, total, resolved, closed, fixed, active, notBug,
+          closeRate: total > 0 ? closed / total : 0,
+          fixRate: realBugTotal > 0 ? fixed / realBugTotal : 0,
+        });
+      }
+    }
+    const totalAll = groups.reduce((s, g) => s + g.total, 0);
+    const notBugAll = allBugs.filter((b) => isNotBug(b)).length;
+    const realBugAll = totalAll - notBugAll;
+    if (hasTimeFilter) {
+      const resolvedAll = groups.reduce((s, g) => s + g.resolvedInPeriod, 0);
+      const closedAll = groups.reduce((s, g) => s + g.closedInPeriod, 0);
+      const fixedAll = groups.reduce((s, g) => s + g.fixedInPeriod, 0);
+      return normalizeResult({
+        groupBy: "product", hasTimeFilter, from: from || null, to: to || null,
+        totalBugs: totalAll, totalResolvedInPeriod: resolvedAll, totalClosedInPeriod: closedAll, totalFixedInPeriod: fixedAll, groups,
+      });
+    }
+    const resolvedAll = groups.reduce((s, g) => s + g.resolved, 0);
+    const closedAll = groups.reduce((s, g) => s + g.closed, 0);
+    const fixedAll = groups.reduce((s, g) => s + g.fixed, 0);
+    const activeAll = groups.reduce((s, g) => s + g.active, 0);
+    return normalizeResult({
+      groupBy: "product", hasTimeFilter, from: null, to: null,
+      totalBugs: totalAll, totalResolved: resolvedAll, totalClosed: closedAll, totalFixed: fixedAll,
+      totalActive: activeAll, totalNotBug: notBugAll,
+      closeRate: totalAll > 0 ? closedAll / totalAll : 0,
+      fixRate: realBugAll > 0 ? fixedAll / realBugAll : 0, groups,
+    });
+  }
+
+  if (targetGroupBy === "person") {
+    const personMap = {};
+
+    for (const bug of allBugs) {
+      if (!isHandled(bug)) continue;
+      if (hasTimeFilter && !inTimeRange(bug)) continue;
+      const accounts = extractAccounts(bug.resolvedBy);
+      const account = accounts.length > 0 ? accounts[0] : "(unknown)";
+      if (!personMap[account]) personMap[account] = { person: account, resolved: 0, closed: 0, fixed: 0 };
+      personMap[account].resolved += 1;
+      if (isClosed(bug)) personMap[account].closed += 1;
+      if (isFixed(bug)) personMap[account].fixed += 1;
+    }
+
+    const groups = Object.values(personMap).sort((a, b) => b.resolved - a.resolved);
+    const resolvedAll = groups.reduce((s, g) => s + g.resolved, 0);
+    const closedAll = groups.reduce((s, g) => s + g.closed, 0);
+    const fixedAll = groups.reduce((s, g) => s + g.fixed, 0);
+    const activeCount = allBugs.filter((b) => !isHandled(b)).length;
+    const notBugAll = allBugs.filter((b) => isNotBug(b)).length;
+    const realBugAll = totalBugs - notBugAll;
+
+    const result = {
+      groupBy: "person", hasTimeFilter, from: from || null, to: to || null,
+      totalBugs, totalActive: activeCount, groups,
+    };
+    if (hasTimeFilter) {
+      result.totalResolvedInPeriod = resolvedAll;
+      result.totalClosedInPeriod = closedAll;
+      result.totalFixedInPeriod = fixedAll;
+    } else {
+      result.totalResolved = resolvedAll;
+      result.totalClosed = closedAll;
+      result.totalFixed = fixedAll;
+      result.totalNotBug = notBugAll;
+      result.closeRate = totalBugs > 0 ? closedAll / totalBugs : 0;
+      result.fixRate = realBugAll > 0 ? fixedAll / realBugAll : 0;
+    }
+    return normalizeResult(result);
+  }
+
+  return normalizeError(`Unknown group-by value: ${groupBy}. Use "product" or "person".`);
 }
 
 export async function bugsMine(client, { account, scope, status, productIds, includeZero, perPage, maxItems, includeDetails }) {
