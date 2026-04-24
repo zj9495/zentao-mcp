@@ -41,6 +41,22 @@ zentao login \
   --zentao-password=你的密码
 ```
 
+如果公司内网禅道使用未受信任证书，可显式忽略证书校验：
+
+```bash
+zentao login \
+  --zentao-url=https://zentao.example.com/zentao \
+  --zentao-account=你的账号 \
+  --zentao-password=你的密码 \
+  --insecure
+```
+
+也可以单次使用环境变量：
+
+```bash
+ZENTAO_INSECURE=1 zentao self-test
+```
+
 > **注意：** URL 通常需要包含 `/zentao` 路径。如果登录时看到 404，多半是少了这段。
 
 验证登录状态：
@@ -64,6 +80,7 @@ zentao whoami
 - 计划 / 发布：列表、详情
 - 测试用例 / 测试单 / 测试套件：列表、详情
 - 文档库 / 文档：列表、详情
+- 文件：附件下载、页面图片读取
 - 用户 / 部门：列表
 - 问题 / 风险：列表、详情
 - 机器可读输出：全部命令支持 `--json`
@@ -123,6 +140,7 @@ zentao self-test
 
 ```bash
 zentao login --zentao-url=... --zentao-account=... --zentao-password=...
+zentao login --zentao-url=... --zentao-account=... --zentao-password=... --insecure
 zentao whoami
 zentao self-test
 
@@ -175,6 +193,9 @@ zentao testsuites get --id 1
 zentao docs libs
 zentao docs list --lib 50
 zentao docs get --id 1
+zentao files download --id 220634
+zentao files download --url "https://zentao.example.com/file-read-220932.png"
+zentao files download --url "https://zentao.example.com/file-download-220634-left.html?zentaosid=..." --output ./downloaded-file
 zentao users list
 zentao departments list
 zentao issues list

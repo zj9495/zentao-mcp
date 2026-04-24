@@ -31,6 +31,7 @@ export function printRootHelp() {
   process.stdout.write(`  zentao testsuites list|get --product <id> [--json]\n`);
   process.stdout.write(`  zentao departments list [--json]\n`);
   process.stdout.write(`  zentao docs libs|list|get ...\n`);
+  process.stdout.write(`  zentao files download --id <fileId>|--url <file URL> [--output path]\n`);
   process.stdout.write(`  zentao issues list|get [--json]\n`);
   process.stdout.write(`  zentao risks list|get [--json]\n`);
   process.stdout.write(`  zentao self-test [--expected N]\n`);
@@ -39,6 +40,7 @@ export function printRootHelp() {
   process.stdout.write(`  --zentao-url        or env ZENTAO_URL\n`);
   process.stdout.write(`  --zentao-account    or env ZENTAO_ACCOUNT\n`);
   process.stdout.write(`  --zentao-password   or env ZENTAO_PASSWORD\n`);
+  process.stdout.write(`  --insecure          or env ZENTAO_INSECURE=1, ignore TLS certificate errors\n`);
   process.stdout.write(`  --help, -h          show help\n\n`);
   process.stdout.write(`Subcommands:\n`);
   process.stdout.write(`  login               save credentials locally\n`);
@@ -62,6 +64,7 @@ export function printRootHelp() {
   process.stdout.write(`  testsuites          test suites (list/get)\n`);
   process.stdout.write(`  departments         departments (list)\n`);
   process.stdout.write(`  docs                doc libs & docs (libs/list/get)\n`);
+  process.stdout.write(`  files               ZenTao files (download)\n`);
   process.stdout.write(`  issues              project issues (list/get)\n`);
   process.stdout.write(`  risks               project risks (list/get)\n`);
   process.stdout.write(`  self-test           run a basic API roundtrip\n`);

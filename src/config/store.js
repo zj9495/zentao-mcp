@@ -46,6 +46,7 @@ function toToml(config) {
   if (config.zentaoUrl) lines.push(`zentaoUrl = "${escapeTomlString(config.zentaoUrl)}"`);
   if (config.zentaoAccount) lines.push(`zentaoAccount = "${escapeTomlString(config.zentaoAccount)}"`);
   if (config.zentaoPassword) lines.push(`zentaoPassword = "${escapeTomlString(config.zentaoPassword)}"`);
+  if (config.zentaoInsecure) lines.push(`zentaoInsecure = "${escapeTomlString(config.zentaoInsecure)}"`);
   lines.push("");
   return lines.join("\n");
 }

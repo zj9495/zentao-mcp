@@ -53,6 +53,7 @@ npx -y @leeguoo/zentao-mcp --help
 
 ```bash
 zentao login --zentao-url="https://zentao.example.com/zentao" --zentao-account="leo" --zentao-password="***"
+zentao login --zentao-url="https://zentao.example.com/zentao" --zentao-account="leo" --zentao-password="***" --insecure
 zentao whoami
 ```
 
@@ -94,6 +95,8 @@ zentao testcases list|get ...
 zentao testtasks list|get ...
 zentao testsuites list|get ...
 zentao docs libs|list|get ...
+zentao files download --id <fileId> [--output path]
+zentao files download --url <file-read|file-download URL> [--output path]
 zentao users list
 zentao departments list
 zentao issues list|get ...
@@ -105,6 +108,7 @@ zentao risks list|get ...
 - All commands can read credentials from saved login config.
 - Flags also work: `--zentao-url`, `--zentao-account`, `--zentao-password`
 - Environment variables also work: `ZENTAO_URL`, `ZENTAO_ACCOUNT`, `ZENTAO_PASSWORD`
+- For untrusted intranet certificates, use `--insecure` or `ZENTAO_INSECURE=1`
 - Add `--json` when the caller wants raw machine-readable output.
 - ZenTao URLs usually need the `/zentao` suffix.
 
@@ -216,6 +220,9 @@ zentao departments list
 zentao docs libs
 zentao docs list --lib 50
 zentao docs get --id 1
+zentao files download --id 220634
+zentao files download --url "https://zentao.example.com/file-read-220932.png"
+zentao files download --url "https://zentao.example.com/file-download-220634-left.html?zentaosid=..." --output ./downloaded-file
 ```
 
 ## Issues & risks

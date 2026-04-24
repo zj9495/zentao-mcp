@@ -5,6 +5,15 @@ function normalizeBaseUrl(url) {
   return url.replace(/\/+$/, "");
 }
 
+function isEnabled(value) {
+  return value === true || value === "true" || value === "1" || value === "yes" || value === "on";
+}
+
+export function applyInsecureTls(insecure) {
+  if (!insecure) return;
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+}
+
 function parseCookies(setCookieHeaders) {
   const jar = {};
   for (const header of setCookieHeaders) {
@@ -147,10 +156,12 @@ export function createClientFromCli({ argv, env }) {
     getOption(cliArgs, env, "ZENTAO_PASSWORD", "zentao-password") ||
     stored.zentaoPassword ||
     null;
+  const insecure = isEnabled(cliArgs.insecure) || isEnabled(env.ZENTAO_INSECURE) || isEnabled(stored.zentaoInsecure);
 
   if (!baseUrl) throw new Error("Missing ZENTAO_URL or --zentao-url");
   if (!account) throw new Error("Missing ZENTAO_ACCOUNT or --zentao-account");
   if (!password) throw new Error("Missing ZENTAO_PASSWORD or --zentao-password");
 
+  applyInsecureTls(insecure);
   return new ZentaoClient({ baseUrl, account, password });
 }

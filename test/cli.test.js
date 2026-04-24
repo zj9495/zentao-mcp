@@ -5,13 +5,17 @@ import test from "node:test";
 import { decodeEscapedNewlines, extractCommand, parseCliArgs } from "../src/cli/args.js";
 import { printRootHelp } from "../src/cli/help.js";
 import { createClientFromCli, ZentaoClient } from "../src/zentao/client.js";
+import { runLogin } from "../src/commands/login.js";
 import { listProducts } from "../src/zentao/products.js";
 import { getConfigPath, loadConfig, saveConfig } from "../src/config/store.js";
 import { formatProductsSimple } from "../src/commands/products.js";
 import { formatBugsMineSimple, formatBugsSimple, formatStatsSimple } from "../src/commands/bugs.js";
 import { bugsStats } from "../src/zentao/bugs.js";
 import { formatBugSimple } from "../src/commands/bug.js";
-import { readFileSync } from "node:fs";
+import { parseContentDispositionFilename, resolveOutputPath } from "../src/commands/files.js";
+import { fetchZentaoFile } from "../src/zentao/files.js";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 test("extractCommand skips flag values", () => {
   const argv = [
@@ -61,6 +65,50 @@ test("createClientFromCli throws on missing auth", () => {
   );
 });
 
+test("createClientFromCli enables insecure TLS from flag", () => {
+  const previous = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+  delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+  try {
+    createClientFromCli({
+      argv: ["--zentao-url", "https://example.com/zentao", "--zentao-account", "leo", "--zentao-password", "pw", "--insecure"],
+      env: { XDG_CONFIG_HOME: `/tmp/zentao-cli-test-insecure-flag-${process.pid}` },
+    });
+    assert.equal(process.env.NODE_TLS_REJECT_UNAUTHORIZED, "0");
+  } finally {
+    if (previous === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+    else process.env.NODE_TLS_REJECT_UNAUTHORIZED = previous;
+  }
+});
+
+test("createClientFromCli enables insecure TLS from saved config", () => {
+  const previous = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+  delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+  const env = { XDG_CONFIG_HOME: `/tmp/zentao-cli-test-insecure-config-${process.pid}` };
+  saveConfig({ zentaoUrl: "https://example.com/zentao", zentaoAccount: "leo", zentaoPassword: "pw", zentaoInsecure: "true" }, { env });
+  try {
+    createClientFromCli({ argv: [], env });
+    assert.equal(process.env.NODE_TLS_REJECT_UNAUTHORIZED, "0");
+  } finally {
+    if (previous === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+    else process.env.NODE_TLS_REJECT_UNAUTHORIZED = previous;
+  }
+});
+
+test("createClientFromCli leaves TLS env unchanged by default", () => {
+  const previous = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+  delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+  try {
+    createClientFromCli({
+      argv: ["--zentao-url", "https://example.com/zentao", "--zentao-account", "leo", "--zentao-password", "pw"],
+      env: { XDG_CONFIG_HOME: `/tmp/zentao-cli-test-secure-${process.pid}` },
+    });
+    assert.equal(process.env.NODE_TLS_REJECT_UNAUTHORIZED, undefined);
+  } finally {
+    if (previous === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+    else process.env.NODE_TLS_REJECT_UNAUTHORIZED = previous;
+  }
+});
+
 test("config store save/load roundtrip", () => {
   const env = { XDG_CONFIG_HOME: "/tmp/zentao-cli-test" };
   const filePath = getConfigPath({ env });
@@ -68,6 +116,32 @@ test("config store save/load roundtrip", () => {
   const loaded = loadConfig({ env });
   assert.equal(loaded.zentaoUrl, "u");
   assert.equal(filePath.includes("zentao/config.toml"), true);
+});
+
+test("login saves insecure config", async () => {
+  const previousTls = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+  const originalFetch = globalThis.fetch;
+  delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+  globalThis.fetch = async (url) => {
+    if (String(url).endsWith("/api.php/v1/tokens")) {
+      return { text: async () => JSON.stringify({ token: "t_abc" }) };
+    }
+    return { text: async () => JSON.stringify({ error: "unexpected" }) };
+  };
+  const env = { XDG_CONFIG_HOME: `/tmp/zentao-cli-test-login-insecure-${process.pid}` };
+  try {
+    await runLogin({
+      argv: ["--zentao-url", "https://example.com/zentao", "--zentao-account", "leo", "--zentao-password", "pw", "--insecure"],
+      env,
+    });
+    const loaded = loadConfig({ env });
+    assert.equal(loaded.zentaoInsecure, "true");
+    assert.equal(process.env.NODE_TLS_REJECT_UNAUTHORIZED, "0");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (previousTls === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+    else process.env.NODE_TLS_REJECT_UNAUTHORIZED = previousTls;
+  }
 });
 
 test("ZentaoClient listProducts uses token then GET products", async () => {
@@ -502,4 +576,119 @@ test("root help mentions skills add install path", () => {
     process.stdout.write = originalWrite;
   }
   assert.match(output, /npx skills add leeguooooo\/zentao-mcp -y -g/);
+});
+
+function mockSessionFetch(calls, fileHandler) {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ url: String(url), options });
+
+    if (String(url).endsWith("/user-login.html") && !options.method) {
+      return { headers: { getSetCookie: () => ["za=seed; path=/"] } };
+    }
+
+    if (String(url).endsWith("/user-login.html") && options.method === "POST") {
+      return { headers: { getSetCookie: () => ["zentaosid=session123; path=/"] } };
+    }
+
+    return fileHandler(url, options);
+  };
+  return originalFetch;
+}
+
+test("fetchZentaoFile downloads by id with session cookie", async () => {
+  const calls = [];
+  const originalFetch = mockSessionFetch(calls, async () => ({
+    status: 200,
+    headers: new Headers({ "Content-Disposition": "attachment; filename=\"report.txt\";" }),
+    arrayBuffer: async () => Buffer.from("file body"),
+  }));
+
+  try {
+    const client = new ZentaoClient({ baseUrl: "https://example.com/zentao", account: "leo", password: "pw" });
+    const result = await fetchZentaoFile(client, { id: "123" });
+    assert.equal(result.url, "https://example.com/zentao/file-download-123.html");
+    assert.equal(result.buffer.toString(), "file body");
+    assert.equal(calls[2].url, "https://example.com/zentao/file-download-123.html");
+    assert.match(calls[2].options.headers.Cookie, /zentaosid=session123/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("fetchZentaoFile accepts file-download url and removes zentaosid", async () => {
+  const calls = [];
+  const originalFetch = mockSessionFetch(calls, async () => ({
+    status: 200,
+    headers: new Headers({ "Content-Disposition": "attachment; filename*=utf-8''%E6%B5%8B%E8%AF%95.txt" }),
+    arrayBuffer: async () => Buffer.from("download"),
+  }));
+
+  try {
+    const client = new ZentaoClient({ baseUrl: "https://example.com/zentao", account: "leo", password: "pw" });
+    const result = await fetchZentaoFile(client, {
+      url: "https://10.10.6.17/file-download-220634-left.html?zentaosid=old&onlybody=yes",
+    });
+    assert.equal(result.url, "https://10.10.6.17/file-download-220634-left.html?onlybody=yes");
+    assert.equal(calls[2].url, "https://10.10.6.17/file-download-220634-left.html?onlybody=yes");
+    assert.match(calls[2].options.headers.Cookie, /zentaosid=session123/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("fetchZentaoFile accepts file-read image url", async () => {
+  const calls = [];
+  const originalFetch = mockSessionFetch(calls, async () => ({
+    status: 200,
+    headers: new Headers({ "Content-Type": "image/png" }),
+    arrayBuffer: async () => Buffer.from([1, 2, 3]),
+  }));
+
+  try {
+    const client = new ZentaoClient({ baseUrl: "https://example.com/zentao", account: "leo", password: "pw" });
+    const result = await fetchZentaoFile(client, { url: "https://10.10.6.17/file-read-220932.png" });
+    assert.equal(result.url, "https://10.10.6.17/file-read-220932.png");
+    assert.deepEqual([...result.buffer], [1, 2, 3]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("files helpers resolve filenames and output paths", () => {
+  const headers = new Headers({ "Content-Disposition": "attachment; filename*=utf-8''%E6%B5%8B%E8%AF%95.txt" });
+  assert.equal(parseContentDispositionFilename(headers.get("content-disposition")), "测试.txt");
+  assert.equal(
+    parseContentDispositionFilename('attachment; filename="èµäº§å®å¨ç®¡çå¹³å°äºæ¸è®¾å¤ç®¡çæä½æå.pdf";'),
+    "资产安全管理平台五清设备管理操作手册.pdf"
+  );
+
+  const tmp = `/tmp/zentao-files-test-${process.pid}`;
+  rmSync(tmp, { recursive: true, force: true });
+  mkdirSync(tmp, { recursive: true });
+  writeFileSync(join(tmp, "existing"), "x");
+
+  const oldCwd = process.cwd();
+  process.chdir(tmp);
+  try {
+    const actualTmp = process.cwd();
+    assert.equal(resolveOutputPath({ headers, url: "https://x/file-read-1.png" }), join(actualTmp, "测试.txt"));
+    assert.equal(resolveOutputPath({ output: tmp, headers: new Headers(), url: "https://x/file-read-1.png" }), join(tmp, "file-read-1.png"));
+    assert.equal(resolveOutputPath({ output: join(tmp, "custom.bin"), headers: new Headers(), url: "https://x/file-read-1.png" }), join(tmp, "custom.bin"));
+    assert.throws(() => resolveOutputPath({ headers: new Headers(), url: "https://x/file-download-1.html" }), /output is required/);
+  } finally {
+    process.chdir(oldCwd);
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("fetchZentaoFile rejects invalid input", async () => {
+  const client = new ZentaoClient({ baseUrl: "https://example.com/zentao", account: "leo", password: "pw" });
+  await assert.rejects(() => fetchZentaoFile(client, {}), /id or url is required/);
+
+  client.ensureSessionCookies = async () => {};
+  await assert.rejects(
+    () => fetchZentaoFile(client, { url: "https://example.com/not-a-file.html" }),
+    /file-download or file-read/
+  );
 });

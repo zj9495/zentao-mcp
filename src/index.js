@@ -27,6 +27,7 @@ import { runDepartments } from "./commands/departments.js";
 import { runDocs } from "./commands/docs.js";
 import { runIssues } from "./commands/issues.js";
 import { runRisks } from "./commands/risks.js";
+import { runFiles } from "./commands/files.js";
 
 const argv = process.argv.slice(2);
 const { command, argv: argvWithoutCommand } = extractCommand(argv);
@@ -155,6 +156,11 @@ try {
 
   if (command === "docs") {
     await runDocs({ argv: argvWithoutCommand, env: process.env });
+    process.exit(0);
+  }
+
+  if (command === "files") {
+    await runFiles({ argv: argvWithoutCommand, env: process.env });
     process.exit(0);
   }
 
