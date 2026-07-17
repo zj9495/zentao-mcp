@@ -81,7 +81,7 @@ zentao projects list
 zentao projects builds --id 22
 zentao executions list
 zentao bugs list --product 6
-zentao bugs mine --status active --include-details
+zentao bugs mine [--account <account>] --scope assigned|opened|resolved|all --status active --include-details
 zentao bugs stats --product-ids 1,2 --group-by product|person [--from DATE] [--to DATE]
 zentao bug get|create|resolve|assign|comment|close|activate ...
 zentao tasks list --execution 25
@@ -124,6 +124,27 @@ zentao bug assign --id 1329 --assigned-to rd-yitong [--comment "..."]
 zentao bug close --id 1329 [--comment "..."]
 zentao bug activate --id 1329 [--assigned-to account] [--comment "..."]
 zentao bug comment --id 1329 --comment "已确认，等待修复"
+```
+
+`zentao bugs mine` 的 `--scope` 支持：
+
+- `assigned`：分配给当前账号的 Bug（默认）
+- `opened`：当前账号创建的 Bug
+- `resolved`：当前账号解决的 Bug
+- `all`：与当前账号相关的 Bug（分配、创建或解决）
+
+默认查询当前登录账号；传入 `--account <account>` 可查询指定账号。
+
+例如，查询当前账号创建的全部 Bug：
+
+```bash
+zentao bugs mine --scope opened --status all --include-details
+```
+
+查询指定账号创建的活跃 Bug：
+
+```bash
+zentao bugs mine --account alice --scope opened --status active --include-details
 ```
 
 Resolution values: `fixed`, `bydesign`, `duplicate`, `postponed`, `notrepro`, `willnotfix`, `tostory`, `external`

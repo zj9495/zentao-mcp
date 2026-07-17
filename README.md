@@ -117,6 +117,29 @@ zentao bugs mine --status active
 zentao bugs mine --status active --include-details
 ```
 
+### 按与我的关系查询 Bug
+
+`zentao bugs mine` 的 `--scope` 支持以下范围，默认是 `assigned`：
+
+- `assigned`：分配给我的 Bug
+- `opened`：由我创建的 Bug
+- `resolved`：由我解决的 Bug
+- `all`：与我相关的 Bug（分配、创建或解决）
+
+默认查询当前登录账号；传入 `--account <账号>` 可查询指定账号。
+
+例如，查看我创建的全部 Bug：
+
+```bash
+zentao bugs mine --scope opened --status all --include-details
+```
+
+查看指定账号创建的活跃 Bug：
+
+```bash
+zentao bugs mine --account alice --scope opened --status active --include-details
+```
+
 ### 需要原始 JSON？
 
 任何命令后面加 `--json`：
@@ -151,7 +174,9 @@ zentao projects builds --id 22
 zentao executions list
 
 zentao bugs list --product 6
-zentao bugs mine --status active --include-details
+zentao bugs mine --scope assigned --status active --include-details
+zentao bugs mine --scope opened --status all --include-details
+zentao bugs mine --account alice --scope opened --status active --include-details
 zentao bug get --id 1329
 zentao bug create --product 6 --title "bug title"
 zentao bug assign --id 1329 --assigned-to someone
@@ -215,6 +240,7 @@ zentao risks get --id 1
 - "帮我看下产品 6 有哪些未解决的 Bug"
 - "查一下 Bug #1329 的详情"
 - "我名下还有多少活跃 Bug？"
+- "查看我创建的全部 Bug"
 - "帮我看执行 25 下有哪些任务"
 - "查一下产品 3 的需求 / 计划 / 发布"
 - "列出测试单、测试用例、测试套件"
