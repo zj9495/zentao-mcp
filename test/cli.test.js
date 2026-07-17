@@ -10,7 +10,7 @@ import { listProducts } from "../src/zentao/products.js";
 import { getConfigPath, loadConfig, saveConfig } from "../src/config/store.js";
 import { formatProductsSimple } from "../src/commands/products.js";
 import { formatBugsMineSimple, formatBugsSimple, formatStatsSimple } from "../src/commands/bugs.js";
-import { bugsStats } from "../src/zentao/bugs.js";
+import { bugsMine, bugsStats } from "../src/zentao/bugs.js";
 import { formatBugSimple } from "../src/commands/bug.js";
 import { parseContentDispositionFilename, resolveOutputPath } from "../src/commands/files.js";
 import { fetchZentaoFile } from "../src/zentao/files.js";
@@ -234,6 +234,40 @@ test("formatBugsMineSimple prints summary", () => {
   });
   assert.ok(out.includes("total\t2"));
   assert.ok(out.includes("1\tP1\t2\t10"));
+});
+
+test("bugsMine fetches all statuses before filtering opened bugs", async () => {
+  const requests = [];
+  const client = {
+    account: "leo",
+    async request(request) {
+      requests.push(request);
+      if (request.path === "/api.php/v1/products") {
+        return { products: [{ id: 1, name: "P1", totalBugs: 2 }] };
+      }
+      if (request.path === "/api.php/v1/bugs") {
+        return {
+          bugs: [
+            { id: 1, status: "active", openedBy: { account: "leo" } },
+            { id: 2, status: "closed", openedBy: { account: "leo" } },
+          ],
+          total: 2,
+          limit: 100,
+        };
+      }
+      throw new Error(`Unexpected request: ${request.path}`);
+    },
+  };
+
+  const result = await bugsMine(client, {
+    scope: "opened",
+    status: "all",
+    includeDetails: true,
+  });
+
+  assert.equal(requests.find((request) => request.path === "/api.php/v1/bugs")?.query.status, "all");
+  assert.equal(result.result.total, 2);
+  assert.deepEqual(result.result.bugs.map((bug) => bug.id), [1, 2]);
 });
 
 test("formatStatsSimple prints product rates", () => {

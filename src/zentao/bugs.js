@@ -429,6 +429,7 @@ export async function bugsMine(client, { account, scope, status, productIds, inc
     const { bugs: productBugs } = await fetchAllBugsForProduct(client, {
       product: product.id,
       perPage,
+      status: "all",
     });
 
     const matches = productBugs.filter((bug) => {
